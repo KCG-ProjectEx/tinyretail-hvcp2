@@ -14,7 +14,7 @@
 /* limitations under the License.                                            */
 /*---------------------------------------------------------------------------*/
 
-#include "main.h"
+#include "TinyRetail_HVCP2_main.h"
 
 /*----------------------------------------------------------------------------*/
 /* UART send signal                                                           */
@@ -79,6 +79,14 @@ int kbhit(void)
 /* HVC Execute Processing  */
 int main(int argc, char *argv[])
 {
+    //-------------------------------
+    ofstream outputfile("log_output.txt" ,ios::app);
+    time_t timer;
+    struct tm *t_st;
+    //-------------------------------
+    
+	int count = 0;
+	
 	Post_curl *p_postCurl;
 	CJSON *p_listJSON;
 	
@@ -86,19 +94,6 @@ int main(int argc, char *argv[])
 	p_postCurl->Begin(POST_URL);
 	
 	p_listJSON = new CJSON();
-	
-	p_listJSON->push("camera_id", "1");
-	p_listJSON->push("sex_id", "3");
-	p_listJSON->push("age", "0");
-	p_listJSON->push("neutral", "0");
-	p_listJSON->push("happiness", "0");
-	p_listJSON->push("surprise", "0");
-	p_listJSON->push("anger", "0");
-	p_listJSON->push("sadness", "0");
-	p_listJSON->push("emotion", "0");
-	
-	string tmp = p_listJSON->pop();
-	p_postCurl->send_post(tmp.c_str());
 
 	//cv::Mat	image1(SIZE_HEIGHT, SIZE_WIDTH, CV_8UC1);
 	//cv::namedWindow("Image", CV_WINDOW_AUTOSIZE | CV_WINDOW_FREERATIO);
@@ -381,11 +376,13 @@ int main(int argc, char *argv[])
             ret = HVC_ExecuteEx(timeOutTime, execFlag, imageNo, pHVCResult, &status);
             if ( ret != 0 ) {
                 sprintf(&pStr[strlen(pStr)], "\nHVCApi(HVC_ExecuteEx) Error : %d\n", ret);
-                break;
+                continue;
+                //break;
             }
             if ( status != 0 ) {
                 sprintf(&pStr[strlen(pStr)], "\nHVC_ExecuteEx Response Error : 0x%02X\n", status);
-                break;
+                continue;
+                //break;
             }
             
             if ( imageNo == HVC_EXECUTE_IMAGE_QVGA ) {
@@ -469,10 +466,11 @@ int main(int argc, char *argv[])
                      HVC_ACTIV_GAZE_ESTIMATION | HVC_ACTIV_BLINK_ESTIMATION |
                      HVC_ACTIV_EXPRESSION_ESTIMATION | HVC_ACTIV_FACE_RECOGNITION)){
                 sprintf(&pStr[strlen(pStr)], "\n Face result count:%d", pHVCResult->fdResult.num);
+                
                 for(i = 0; i < pHVCResult->fdResult.num; i++){
-					if ( pHVCResult->fdResult.fcResult[i].dtResult.posX < EoS_LEFT || pHVCResult->fdResult.fcResult[i].dtResult.posX > EoS_RIGHT)
-						continue;
-
+					//if ( pHVCResult->fdResult.fcResult[i].dtResult.posX < EoS_LEFT || pHVCResult->fdResult.fcResult[i].dtResult.posX > EoS_RIGHT)
+						//continue;
+						
                     if(pHVCResult->executedFunc & HVC_ACTIV_FACE_DETECTION){
                         /* Detection */
                         sprintf(&pStr[strlen(pStr)], "\n      Index:%d \t\tX:%d Y:%d Size:%d Confidence:%d", i,
@@ -584,12 +582,54 @@ int main(int argc, char *argv[])
                 }
             }
             
+            if( count >= 5){
+                count = 0;
+            
+                for (i = 0; i < pHVCResult->fdResult.num; i++) {
+                    if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 20000 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 20000) {
+                        p_listJSON->init();
+                        p_listJSON->push("camera_id", "1");
+                        p_listJSON->push("sex_id", to_string(pHVCResult->fdResult.fcResult[i].genderResult.gender));
+                        p_listJSON->push("sex_rdb", to_string(pHVCResult->fdResult.fcResult[i].genderResult.confidence - 20000));
+                        p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
+                        p_listJSON->push("age_rdb",to_string(pHVCResult->fdResult.fcResult[i].ageResult.confidence - 20000));
+                        
+                        p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
+                        p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
+                        p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
+                        p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
+                        p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
+                        p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
+                        
+                        string tmp = p_listJSON->pop();
+                        if (!(tmp.empty())){
+                            p_postCurl->send_post(tmp.c_str());
+                            printf("送信完了 ログに書き込み\n");
+                            
+                            //--------------------
+                            //ここからログ書き込み
+                            time( &timer );
+                            t_st = localtime(&timer);
+                            
+                            outputfile<< t_st->tm_year+1900 << "/" << t_st->tm_mon+1 << "/" << t_st->tm_mday << "_" << t_st->tm_hour << ":" << t_st->tm_min <<":" << t_st->tm_sec << "|" << tmp <<endl;
+                            
+                            }
+                     }
+                }
+            }
+            
             if (kbhit()) {
                 printf("キーボードが押されたので終了します。\n", getchar());
                 break;
             }
+            count++;
+            
+            //usleep(100000);
         } while( ch != ' ' );
     } while(0);
+    
+    outputfile.close();
+    
     /******************/
     /* Log Output     */
     /******************/
@@ -608,7 +648,6 @@ int main(int argc, char *argv[])
     STB_Final();
 
     com_close();
-
     /* Free Logging Buffer */
     if ( pStr != NULL ) {
         free(pStr);

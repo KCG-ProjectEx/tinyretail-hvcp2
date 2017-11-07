@@ -17,11 +17,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
 
+#include <time.h>
 #include "uart.h"
 #include "inc/stdThread.h"
 
@@ -131,29 +133,40 @@ int com_send(unsigned char *buf, int len)
 
 int com_recv(int inTimeOutTimer, unsigned char *buf, int len)
 {
+	//---------------------------
+	time_t start_time, end_time;
+	double sec_time;
+	//---------------------------
 	
-    DWORD ierr;
-	//COMSTAT stat;
-    DWORD dwSize = 0;
-
-    int ret = 0;
-    int totalSize = 0;
-    int readSize = 0;
-    //printf(" recv1\n");
-  	do {
-      ioctl(fd,FIONREAD,&readSize);
-      if( readSize >= 1)
-      {
-       // printf(" readFile aru\n");
-			  ret = len - totalSize;
-        //printf(" ret:%d\n",ret);
-			  dwSize = read(fd, &buf[totalSize], ret);
-			  totalSize += (int)dwSize;
-       // printf(" totalSize:%d\n",totalSize);
-      }
-		  if (totalSize >= len) break;
-	  } while (1);
-    //printf(" recv2\n");
+	DWORD ierr;
+	DWORD dwSize = 0;
+	
+	int ret = 0;
+	int totalSize = 0;
+	int readSize = 0;
+	
+	time( &start_time );
+	do {
+		fflush(stdin);
+		ioctl(fd,FIONREAD,&readSize);
+		if( readSize >= 1)
+		{
+			ret = len - totalSize;
+			if( ret > readSize ) ret = readSize;
+			dwSize = read(fd, &buf[totalSize], ret);
+			totalSize += (int)dwSize;
+		}
+		if (totalSize >= len) break;
+		
+		time( &end_time );
+		sec_time = difftime( end_time, start_time );
+		if (sec_time >= 2.0){
+			printf("------------------------------\n");
+			printf("time out!\n");
+			printf("------------------------------\n");
+			break;
+		}
+	} while (1);
 	/*
     double finishTime = 0.0;
 

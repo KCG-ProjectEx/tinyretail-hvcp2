@@ -1,5 +1,5 @@
-//#include <Post_curl.h>
 #include "Post_curl.h"
+
 /*****************************************
 @ function
 @ parameter
@@ -41,13 +41,11 @@ int Post_curl::Begin(const char *curl_url){
 
     /* In windows, this will init the winsock stuff */ 
     // グローバルlibcurlの初期化
-    fprintf(stdout,"curl_global_init()\n");    
     int ret = curl_global_init(CURL_GLOBAL_ALL);
     if( ret != 0)return -1;
 
     // ハンドルを取得する
     // ハンドルは再利用することでパフォーマンス向上させる 
-    fprintf(stdout,"curl_easy_init()\n");    
     CURL *p = curl_easy_init();
     if( p == NULL )return -1;
 
@@ -59,7 +57,25 @@ int Post_curl::Begin(const char *curl_url){
     //POSTの送信先URLを設定する
     curl_easy_setopt(curl, CURLOPT_URL, curl_url);
 
+    //レスポンスデータを扱う関数を設定する(コールバック関数の設定)
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, receive_post_data);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, NULL);
+
     return 0;
+}
+/*****************************************
+@ function
+    httpレスポンスデータを表示させない為の関数
+@ parameter
+    POSTのレスポンスデータ
+@ return
+    正常終了 : 実際に処理されたバイト数,　異常終了 : 0
+******************************************/
+size_t Post_curl::receive_post_data(void* ptr, size_t size, size_t nmemb, void* data){
+    
+    if (size * nmemb == 0) return 0;
+
+    return size * nmemb;
 }
 
 /*****************************************
@@ -82,7 +98,7 @@ int Post_curl::send_post(const char *post_data){
 
     //エラーチェック
     if(res != CURLE_OK){
-        // fprintf(stderr, "curl_easy_perform() failed: %s\n",curl_easy_strerror(res));
+        fprintf(stderr, "curl_easy_perform() failed: %s\n",curl_easy_strerror(res));
         return -1;
     }
 

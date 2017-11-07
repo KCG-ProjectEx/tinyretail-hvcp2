@@ -1,6 +1,7 @@
 #ifndef JSON_H__
 #define JSON_H__
 
+#include <iostream>
 #include <string>
 
 using namespace std;
@@ -14,6 +15,7 @@ public:
 	string pop();
 	int init();
 	string data;
+	bool initFlag;
 };
 
 #endif
