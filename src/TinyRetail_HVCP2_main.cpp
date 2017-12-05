@@ -590,17 +590,22 @@ int main(int argc, char *argv[])
                         p_listJSON->init();
                         p_listJSON->push("camera_id", "1");
                         p_listJSON->push("sex_id", to_string(pHVCResult->fdResult.fcResult[i].genderResult.gender));
-                        p_listJSON->push("sex_rdb", to_string(pHVCResult->fdResult.fcResult[i].genderResult.confidence - 20000));
+                        //p_listJSON->push("sex_rdb", to_string(pHVCResult->fdResult.fcResult[i].genderResult.confidence - 20000));
                         p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
-                        p_listJSON->push("age_rdb",to_string(pHVCResult->fdResult.fcResult[i].ageResult.confidence - 20000));
+                        //p_listJSON->push("age_rdb",to_string(pHVCResult->fdResult.fcResult[i].ageResult.confidence - 20000));
                         
                         p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
                         p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
                         p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
                         p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
                         p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
-                        p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
+                        //p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
                         
+                        p_listJSON->push("face_x",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posX));
+                        p_listJSON->push("face_y",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posY));
+                        p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
+                        p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
+
                         string tmp = p_listJSON->pop();
                         if (!(tmp.empty())){
                             p_postCurl->send_post(tmp.c_str());
