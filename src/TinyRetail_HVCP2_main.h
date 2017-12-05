@@ -44,8 +44,8 @@
 #include<fstream>
 #include <time.h>
 
-//#include <opencv2/opencv.hpp>
-//#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 using namespace std;
 
@@ -91,6 +91,6 @@ using namespace std;
 #define STB_PE_ANGLEUDMAX_DEFAULT           20            /* Up/Down face angle maximum value for property estimation in STB */
 #define STB_PE_ANGLELRMIN_DEFAULT          -20            /* Left/Right face angle minimum value for property estimation in STB */
 #define STB_PE_ANGLELRMAX_DEFAULT           20            /* Left/Right face angle maximum value for property estimation in STB */
-#define STB_PE_THRESHOLD_DEFAULT           200            /* Threshold for property estimation in STB */
+#define STB_PE_THRESHOLD_DEFAULT           400            /* Threshold for property estimation in STB */
 
 #endif

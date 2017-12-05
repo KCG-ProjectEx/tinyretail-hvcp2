@@ -95,8 +95,8 @@ int main(int argc, char *argv[])
 	
 	p_listJSON = new CJSON();
 
-	//cv::Mat	image1(SIZE_HEIGHT, SIZE_WIDTH, CV_8UC1);
-	//cv::namedWindow("Image", CV_WINDOW_AUTOSIZE | CV_WINDOW_FREERATIO);
+	cv::Mat	image1(SIZE_HEIGHT, SIZE_WIDTH, CV_8UC1);
+	cv::namedWindow("Image", CV_WINDOW_AUTOSIZE | CV_WINDOW_FREERATIO);
 
     INT32 ret = 0;  /* Return code */
 
@@ -388,7 +388,7 @@ int main(int argc, char *argv[])
             if ( imageNo == HVC_EXECUTE_IMAGE_QVGA ) {
                 //SaveBitmapFile(pHVCResult->image.width, pHVCResult->image.height, pHVCResult->image.image, "SampleImage.bmp");
 				//
-#if 0
+#if 1
 				int count = 0;
 				for (int y = 0; y < SIZE_HEIGHT; y++) {
 					for (int x = 0; x < SIZE_WIDTH; x++) {
