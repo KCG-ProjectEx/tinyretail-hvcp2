@@ -694,6 +694,8 @@ int main(int argc, char *argv[])
                     p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
                     p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
 
+                    p_listJSON->push("gaze_lr",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeLR));
+                    p_listJSON->push("gaze_ud",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeUD));
                     p_listJSON->push("stabilization","1");
 
                     string tmp = p_listJSON->pop();
@@ -735,6 +737,9 @@ int main(int argc, char *argv[])
                     p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
                     p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
                     
+                    p_listJSON->push("gaze_lr",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeLR));
+                    p_listJSON->push("gaze_ud",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeUD));
+
                     p_listJSON->push("stabilization","0");
                     
                     string tmp = p_listJSON->pop();

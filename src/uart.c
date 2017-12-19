@@ -28,7 +28,7 @@
 #include "inc/stdThread.h"
 
 #define BAUDRATE B115200
-#define SERIAL_PORT "/dev/ttyACM1"  /* シリアルインターフェースに対応するデバイスファイル */
+#define SERIAL_PORT "/dev/ttyACM0"  /* シリアルインターフェースに対応するデバイスファイル */
 //static HANDLE hCom = INVALID_HANDLE_VALUE;
 static int fd;
 static struct termios oldtio, newtio;    /* シリアル通信設定 */
