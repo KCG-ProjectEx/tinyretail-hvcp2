@@ -68,7 +68,7 @@ using namespace std;
 
 #define SENSOR_ROLL_ANGLE_DEFAULT            0            /* Camera angle setting (0°) */
 
-#define BODY_THRESHOLD_DEFAULT             500            /* Threshold for Human Body Detection */
+#define BODY_THRESHOLD_DEFAULT             300            /* Threshold for Human Body Detection */
 #define FACE_THRESHOLD_DEFAULT             500            /* Threshold for Face Detection */
 #define HAND_THRESHOLD_DEFAULT             500            /* Threshold for Hand Detection */
 #define REC_THRESHOLD_DEFAULT              500            /* Threshold for Face Recognition */
@@ -83,7 +83,7 @@ using namespace std;
 #define FACE_POSE_DEFAULT                    0            /* Face Detection facial pose (frontal face)*/
 #define FACE_ANGLE_DEFAULT                   0            /* Face Detection roll angle (±15°)*/
 
-#define STB_RETRYCOUNT_DEFAULT               4            /* Retry Count for STB */
+#define STB_RETRYCOUNT_DEFAULT               8            /* Retry Count for STB */
 #define STB_POSSTEADINESS_DEFAULT           30            /* Position Steadiness for STB */
 #define STB_SIZESTEADINESS_DEFAULT          30            /* Size Steadiness for STB */
 #define STB_PE_FRAME_DEFAULT                10            /* Complete Frame Count for property estimation in STB */
@@ -91,6 +91,6 @@ using namespace std;
 #define STB_PE_ANGLEUDMAX_DEFAULT           20            /* Up/Down face angle maximum value for property estimation in STB */
 #define STB_PE_ANGLELRMIN_DEFAULT          -20            /* Left/Right face angle minimum value for property estimation in STB */
 #define STB_PE_ANGLELRMAX_DEFAULT           20            /* Left/Right face angle maximum value for property estimation in STB */
-#define STB_PE_THRESHOLD_DEFAULT           400            /* Threshold for property estimation in STB */
+#define STB_PE_THRESHOLD_DEFAULT           300            /* Threshold for property estimation in STB */
 
 #endif

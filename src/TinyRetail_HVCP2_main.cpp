@@ -15,6 +15,7 @@
 /*---------------------------------------------------------------------------*/
 
 #include "TinyRetail_HVCP2_main.h"
+#define RetryCount 10
 
 /*----------------------------------------------------------------------------*/
 /* UART send signal                                                           */
@@ -79,6 +80,29 @@ int kbhit(void)
 /* HVC Execute Processing  */
 int main(int argc, char *argv[])
 {
+    //変数名は変える
+    //-------------------------------
+    double timeResidence = 0;       //総滞在時間
+    int m_countTimeResidence = 0;
+	bool startFlgTR = false;
+	time_t startTimeTR;
+	
+    int m_countStbHuman = 0;
+    int m_prevStbBody = 0;          //前回の安定化した人数
+    
+    
+    
+    //-------------------------------
+    
+    //-------------------------------
+    int m_countAvg = 0;
+    int m_countHuman = 0;             //通った人カウント
+    int m_prevBody = 0;               //前回の人数
+    
+    int m_countAvg2 = 0;    //TODO: 変数名は変える
+    int m_countInterestHuman = 0;     //ブースに興味を持った人カウント
+    //-------------------------------
+    
     //-------------------------------
     ofstream outputfile("log_output.txt" ,ios::app);
     time_t timer;
@@ -95,8 +119,10 @@ int main(int argc, char *argv[])
 	
 	p_listJSON = new CJSON();
 
+#if 0
 	cv::Mat	image1(SIZE_HEIGHT, SIZE_WIDTH, CV_8UC1);
 	cv::namedWindow("Image", CV_WINDOW_AUTOSIZE | CV_WINDOW_FREERATIO);
+#endif
 
     INT32 ret = 0;  /* Return code */
 
@@ -388,15 +414,15 @@ int main(int argc, char *argv[])
             if ( imageNo == HVC_EXECUTE_IMAGE_QVGA ) {
                 //SaveBitmapFile(pHVCResult->image.width, pHVCResult->image.height, pHVCResult->image.image, "SampleImage.bmp");
 				//
-#if 1
-				int count = 0;
+#if 0
+				int countPic = 0;
 				for (int y = 0; y < SIZE_HEIGHT; y++) {
 					for (int x = 0; x < SIZE_WIDTH; x++) {
-						image1.at<uchar>(y, x) = (uchar)pHVCResult->image.image[x + count];
+						image1.at<uchar>(y, x) = (uchar)pHVCResult->image.image[x + countPic];
 						//image1.at<uchar>(y, x) = (uchar)255;
-						//std::cout << x << ":" << (int)pHVCResult->image.image[x + count] << endl;
+						//std::cout << x << ":" << (int)pHVCResult->image.image[x + countPic] << endl;
 					}
-					count += 320;
+					countPic += 320;
 				}
 
 				cv::imshow("Image", image1);
@@ -440,6 +466,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+            
 
 			/* Body Detection result string */
             if(pHVCResult->executedFunc & HVC_ACTIV_BODY_DETECTION){
@@ -450,6 +477,65 @@ int main(int argc, char *argv[])
                                 pHVCResult->bdResult.bdResult[i].size, pHVCResult->bdResult.bdResult[i].confidence);
                 }
             }
+            
+            if(pHVCResult->executedFunc & HVC_ACTIV_BODY_DETECTION)
+            {
+                if(pHVCResult->bdResult.num > m_prevBody)
+                {
+                    m_prevBody = pHVCResult->bdResult.num;
+                }
+                else if(pHVCResult->bdResult.num < m_prevBody)
+                {
+                    m_countAvg++;
+                }
+                
+                if(m_countAvg >= RetryCount)
+                {
+                    int tmp = m_prevBody - pHVCResult->bdResult.num;// 前回から減った人数
+                    for (int i = 0; i < tmp; i++)
+                    {
+                        m_countHuman++;
+                        printf("売り場に来た人 %d\n", m_countHuman);
+                        //何かを送信
+                    }
+                    m_prevBody = pHVCResult->bdResult.num;
+                    m_countAvg= 0;
+                }
+            }
+            
+            if(pHVCResult->executedFunc & HVC_ACTIV_BODY_DETECTION)
+            {
+                
+                if(pHVCResult->bdResult.num > 0)
+                {
+                    m_countTimeResidence++;
+                }
+                else if(pHVCResult->bdResult.num == 0)
+                {
+                    m_countTimeResidence = 0;
+                }
+                
+                if(m_countTimeResidence >= RetryCount && startFlgTR == false)
+                {
+                    startTimeTR = time(NULL);
+                    startFlgTR = true;
+                }
+                
+                if(pHVCResult->bdResult.num == 0 && startFlgTR == true)
+                {
+                    m_countAvg2++;
+                    
+                    if(m_countAvg2 >= RetryCount)
+                    {
+                        printf("経過時間：%.1f秒\n", difftime(time(NULL), startTimeTR));
+                        timeResidence = difftime(time(NULL), startTimeTR);
+                        startFlgTR = false;
+                        m_countTimeResidence = 0;
+                        m_countAvg2 = 0;
+                    }
+                }
+            }
+            
 		    /* Hand Detection result string */
             if(pHVCResult->executedFunc & HVC_ACTIV_HAND_DETECTION){
                 sprintf(&pStr[strlen(pStr)], "\n Hand result count:%d", pHVCResult->hdResult.num);
@@ -582,34 +668,39 @@ int main(int argc, char *argv[])
                 }
             }
             
-            if( count >= 5){
-                count = 0;
-            
-                for (i = 0; i < pHVCResult->fdResult.num; i++) {
-                    if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 20000 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 20000) {
-                        p_listJSON->init();
-                        p_listJSON->push("camera_id", "1");
-                        p_listJSON->push("sex_id", to_string(pHVCResult->fdResult.fcResult[i].genderResult.gender));
-                        //p_listJSON->push("sex_rdb", to_string(pHVCResult->fdResult.fcResult[i].genderResult.confidence - 20000));
-                        p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
-                        //p_listJSON->push("age_rdb",to_string(pHVCResult->fdResult.fcResult[i].ageResult.confidence - 20000));
-                        
-                        p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
-                        p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
-                        p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
-                        p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
-                        p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
-                        //p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
-                        
-                        p_listJSON->push("face_x",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posX));
-                        p_listJSON->push("face_y",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posY));
-                        p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
-                        p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
+            for (i = 0; i < pHVCResult->fdResult.num; i++)
+            {
+                if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 20500 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 20500) {
+                    p_listJSON->init();
+                    p_listJSON->push("camera_id", "1");
+                    if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 1)
+                    {
+                        p_listJSON->push("sex_id", "1");
+                    }
+                    else if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 0){
+                        p_listJSON->push("sex_id", "2");
+                    }
+                    p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
+                    
+                    p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
+                    p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
+                    p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
+                    p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
+                    p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
+                    p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
+                    
+                    p_listJSON->push("face_x",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posX));
+                    p_listJSON->push("face_y",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posY));
+                    p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
+                    p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
 
-                        string tmp = p_listJSON->pop();
-                        if (!(tmp.empty())){
-                            p_postCurl->send_post(tmp.c_str());
-                            printf("送信完了 ログに書き込み\n");
+                    p_listJSON->push("stabilization","1");
+
+                    string tmp = p_listJSON->pop();
+                    
+                    if (!(tmp.empty())){
+                        p_postCurl->send_post(tmp.c_str());
+                        printf("送信完了 ログに書き込み\n");
                             
                             //--------------------
                             //ここからログ書き込み
@@ -617,17 +708,56 @@ int main(int argc, char *argv[])
                             t_st = localtime(&timer);
                             
                             outputfile<< t_st->tm_year+1900 << "/" << t_st->tm_mon+1 << "/" << t_st->tm_mday << "_" << t_st->tm_hour << ":" << t_st->tm_min <<":" << t_st->tm_sec << "|" << tmp <<endl;
-                            
-                            }
-                     }
+                    }
+                 }
+                 else if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 10500 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 10400)
+                 {
+                    p_listJSON->init();
+                    p_listJSON->push("camera_id", "1");
+                    if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 1)
+                    {
+                        p_listJSON->push("sex_id", "1");
+                    }
+                    else if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 0){
+                        p_listJSON->push("sex_id", "2");
+                    }
+                    p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
+                    
+                    p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
+                    p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
+                    p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
+                    p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
+                    p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
+                    p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
+                    
+                    p_listJSON->push("face_x",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posX));
+                    p_listJSON->push("face_y",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posY));
+                    p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
+                    p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
+                    
+                    p_listJSON->push("stabilization","0");
+                    
+                    string tmp = p_listJSON->pop();
+                    if (!(tmp.empty()))
+                    {
+                        p_postCurl->send_post(tmp.c_str());
+                        printf("送信完了 ログに書き込み\n");
+                        
+                        //--------------------
+                        //ここからログ書き込み
+                        time( &timer );
+                        t_st = localtime(&timer);
+                        
+                        outputfile<< t_st->tm_year+1900 << "/" << t_st->tm_mon+1 << "/" << t_st->tm_mday << "_" << t_st->tm_hour << ":" << t_st->tm_min <<":" << t_st->tm_sec << "|" << tmp <<endl;
+                        
+                        }
+                    }
                 }
-            }
-            
+            //}
             if (kbhit()) {
                 printf("キーボードが押されたので終了します。\n", getchar());
                 break;
             }
-            count++;
             
             //usleep(100000);
         } while( ch != ' ' );
