@@ -44,7 +44,7 @@ string CJSON::pop()
 	
 	this->initFlag = 0;
     
-    cout << this->data << endl;
+    //cout << this->data << endl;
 	
 	return this->data;
 }

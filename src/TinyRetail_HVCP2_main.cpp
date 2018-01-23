@@ -14,6 +14,10 @@
 /* limitations under the License.                                            */
 /*---------------------------------------------------------------------------*/
 
+
+/*
+g++ -o TinyRetail_HVCP2 TinyRetail_HVCP2_main.cpp HVCApi.c STBWrap.c uart.c Post_curl.cpp JSON.cpp libHVCP2.a -lcurl -std=c++11 -I/usr/local/include/opencv2 -I/usr/local/include/opencv -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui -fsigned-char
+*/
 #include "TinyRetail_HVCP2_main.h"
 #define RetryCount 10
 
@@ -104,19 +108,26 @@ int main(int argc, char *argv[])
     //-------------------------------
     
     //-------------------------------
-    ofstream outputfile("log_output.txt" ,ios::app);
+    ofstream outputfile("/home/pi/TinyRetail-hvcp2/log/log.txt" ,ios::app);
     time_t timer;
     struct tm *t_st;
+
+    time_t timeElapsed;
+    double elapsedTimeSecond;
+    timeElapsed = time(NULL);
     //-------------------------------
     
 	int count = 0;
 	
-	Post_curl *p_postCurl;
+	CPost_curl *p_postCurl, *p_postCurlCameraCount;
 	CJSON *p_listJSON;
 	
-	p_postCurl = new Post_curl();
-	p_postCurl->Begin(POST_URL);
+	p_postCurl = new CPost_curl();
+	p_postCurl->Begin(POST_URL_CAMERA);
 	
+    p_postCurlCameraCount = new CPost_curl();
+	p_postCurlCameraCount->Begin(POST_URL_CAMERA_COUNT);
+
 	p_listJSON = new CJSON();
 
 #if 0
@@ -477,7 +488,8 @@ int main(int argc, char *argv[])
                                 pHVCResult->bdResult.bdResult[i].size, pHVCResult->bdResult.bdResult[i].confidence);
                 }
             }
-            
+
+            /* 売り場に来た人数 */
             if(pHVCResult->executedFunc & HVC_ACTIV_BODY_DETECTION)
             {
                 if(pHVCResult->bdResult.num > m_prevBody)
@@ -491,21 +503,28 @@ int main(int argc, char *argv[])
                 
                 if(m_countAvg >= RetryCount)
                 {
-                    int tmp = m_prevBody - pHVCResult->bdResult.num;// 前回から減った人数
-                    for (int i = 0; i < tmp; i++)
+                    int tmpCount = m_prevBody - pHVCResult->bdResult.num;// 前回から減った人数
+                    for (int i = 0; i < tmpCount; i++)
                     {
                         m_countHuman++;
                         printf("売り場に来た人 %d\n", m_countHuman);
-                        //何かを送信
                     }
                     m_prevBody = pHVCResult->bdResult.num;
                     m_countAvg= 0;
-                }
+
+                    p_listJSON->init();
+                    p_listJSON->push("camera_count", "1");
+                    p_listJSON->push("count", to_string(tmpCount));
+                    string tmp = p_listJSON->pop();
+                
+                    if (!(tmp.empty()))
+                        p_postCurlCameraCount->send_post(tmp.c_str());
+
+                    }
             }
             
             if(pHVCResult->executedFunc & HVC_ACTIV_BODY_DETECTION)
             {
-                
                 if(pHVCResult->bdResult.num > 0)
                 {
                     m_countTimeResidence++;
@@ -746,7 +765,7 @@ int main(int argc, char *argv[])
                     if (!(tmp.empty()))
                     {
                         p_postCurl->send_post(tmp.c_str());
-                        printf("送信完了 ログに書き込み\n");
+                        //printf("送信完了 ログに書き込み\n");
                         
                         //--------------------
                         //ここからログ書き込み
@@ -759,7 +778,21 @@ int main(int argc, char *argv[])
                     }
                 }
             //}
-            if (kbhit()) {
+
+            //一定時間立ったらlogファイルをcloseしてopenする
+            elapsedTimeSecond = difftime(time(NULL) ， timeElapsed);
+                
+            //10分経過
+            if( elapsedTimeSecond >= 120 )
+            {
+                cout << "自動書き込み完了" << endl;
+                outputfile.close();
+                outputfile.open("/home/pi/TinyRetail-hvcp2/log/log.txt" ,ios::app);
+                timeElapsed = time(NULL);
+            }
+
+            if (kbhit())
+            {
                 printf("キーボードが押されたので終了します。\n", getchar());
                 break;
             }

@@ -50,7 +50,8 @@
 using namespace std;
 
 //#define POST_URL "http://10.43.0.6/dbconnect.php?iam=camera"
-#define POST_URL "http://192.168.11.110/dbconnect.php?iam=camera"
+#define POST_URL_CAMERA "http://192.168.11.110/dbconnect.php?iam=camera"
+#define POST_URL_CAMERA_COUNT "http://192.168.11.110/dbconnect.php?iam=camera_count"
 //#define POST_URL "http://tinyretail/dbconnect.php?iam=camera"
 
 #define SIZE_WIDTH   320

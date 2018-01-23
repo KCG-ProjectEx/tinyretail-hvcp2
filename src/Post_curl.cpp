@@ -5,7 +5,7 @@
 @ parameter
 @ return
 ******************************************/
-Post_curl::Post_curl(){
+CPost_curl::CPost_curl(){
 
     fprintf(stdout,"Welcome to curl\n");    
 }
@@ -16,7 +16,7 @@ Post_curl::Post_curl(){
 @ parameter
 @ return
 ******************************************/
-Post_curl::~Post_curl(){
+CPost_curl::~CPost_curl(){
 
     // curl_easy_init()で取得したハンドルを開放する
     // 呼び出し後のハンドルの使用は違反となる
@@ -37,7 +37,7 @@ Post_curl::~Post_curl(){
 @ return
     正常終了 0,　異常終了 -1
 ******************************************/
-int Post_curl::Begin(const char *curl_url){
+int CPost_curl::Begin(const char *curl_url){
 
     /* In windows, this will init the winsock stuff */ 
     // グローバルlibcurlの初期化
@@ -71,7 +71,7 @@ int Post_curl::Begin(const char *curl_url){
 @ return
     正常終了 : 実際に処理されたバイト数,　異常終了 : 0
 ******************************************/
-size_t Post_curl::receive_post_data(void* ptr, size_t size, size_t nmemb, void* data){
+size_t CPost_curl::receive_post_data(void* ptr, size_t size, size_t nmemb, void* data){
     
     if (size * nmemb == 0) return 0;
 
@@ -86,13 +86,16 @@ size_t Post_curl::receive_post_data(void* ptr, size_t size, size_t nmemb, void* 
 @ return
     正常終了 0, 異常終了 -1
 ******************************************/
-int Post_curl::send_post(const char *post_data){
+int CPost_curl::send_post(const char *post_data){
 
     CURLcode res;
 
     //POSTデータを指定する
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
 
+    //TIMEOUTを設定する
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 20L);
+    
     //POST要求の実行
     res = curl_easy_perform(curl);
 
