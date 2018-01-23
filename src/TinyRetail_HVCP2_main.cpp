@@ -84,6 +84,11 @@ int kbhit(void)
 /* HVC Execute Processing  */
 int main(int argc, char *argv[])
 {
+    if ( argc < 2)
+    {
+        cout << "URL入力しろ" << endl;
+        return -1;
+    }
     //変数名は変える
     //-------------------------------
     double timeResidence = 0;       //総滞在時間
@@ -93,9 +98,6 @@ int main(int argc, char *argv[])
 	
     int m_countStbHuman = 0;
     int m_prevStbBody = 0;          //前回の安定化した人数
-    
-    
-    
     //-------------------------------
     
     //-------------------------------
@@ -118,15 +120,19 @@ int main(int argc, char *argv[])
     //-------------------------------
     
 	int count = 0;
-	
 	CPost_curl *p_postCurl, *p_postCurlCameraCount;
 	CJSON *p_listJSON;
-	
-	p_postCurl = new CPost_curl();
-	p_postCurl->Begin(POST_URL_CAMERA);
+
+    string postURLCamera = string(argv[1]);
+    string postURLCameraCount = string(argv[1]);
+    postURLCamera = postURLCamera + "dbconnect.php?iam=camera";
+    postURLCameraCount = postURLCameraCount + "dbconnect.php?iam=camera_count";
+
+    p_postCurl = new CPost_curl();
+    p_postCurl->Begin(postURLCamera.c_str());
 	
     p_postCurlCameraCount = new CPost_curl();
-	p_postCurlCameraCount->Begin(POST_URL_CAMERA_COUNT);
+	p_postCurlCameraCount->Begin(postURLCameraCount.c_str());
 
 	p_listJSON = new CJSON();
 
@@ -686,12 +692,13 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-            
             for (i = 0; i < pHVCResult->fdResult.num; i++)
             {
-                if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 20500 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 20500) {
+                if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 10400 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 10400)
+                {
                     p_listJSON->init();
                     p_listJSON->push("camera_id", "1");
+
                     if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 1)
                     {
                         p_listJSON->push("sex_id", "1");
@@ -699,49 +706,7 @@ int main(int argc, char *argv[])
                     else if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 0){
                         p_listJSON->push("sex_id", "2");
                     }
-                    p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
-                    
-                    p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
-                    p_listJSON->push("happiness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[1]));
-                    p_listJSON->push("surprise",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[2]));
-                    p_listJSON->push("anger",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[3]));
-                    p_listJSON->push("sadness",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[4]));
-                    p_listJSON->push("emotion",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.degree));
-                    
-                    p_listJSON->push("face_x",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posX));
-                    p_listJSON->push("face_y",to_string(pHVCResult->fdResult.fcResult[i].dtResult.posY));
-                    p_listJSON->push("face_size",to_string(pHVCResult->fdResult.fcResult[i].dtResult.size));
-                    p_listJSON->push("face_rbd",to_string(pHVCResult->fdResult.fcResult[i].dtResult.confidence));
 
-                    p_listJSON->push("gaze_lr",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeLR));
-                    p_listJSON->push("gaze_ud",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeUD));
-                    p_listJSON->push("stabilization","1");
-
-                    string tmp = p_listJSON->pop();
-                    
-                    if (!(tmp.empty())){
-                        p_postCurl->send_post(tmp.c_str());
-                        printf("送信完了 ログに書き込み\n");
-                            
-                            //--------------------
-                            //ここからログ書き込み
-                            time( &timer );
-                            t_st = localtime(&timer);
-                            
-                            outputfile<< t_st->tm_year+1900 << "/" << t_st->tm_mon+1 << "/" << t_st->tm_mday << "_" << t_st->tm_hour << ":" << t_st->tm_min <<":" << t_st->tm_sec << "|" << tmp <<endl;
-                    }
-                 }
-                 else if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 10500 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 10400)
-                 {
-                    p_listJSON->init();
-                    p_listJSON->push("camera_id", "1");
-                    if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 1)
-                    {
-                        p_listJSON->push("sex_id", "1");
-                    }
-                    else if(pHVCResult->fdResult.fcResult[i].genderResult.gender == 0){
-                        p_listJSON->push("sex_id", "2");
-                    }
                     p_listJSON->push("age",to_string(pHVCResult->fdResult.fcResult[i].ageResult.age));
                     
                     p_listJSON->push("neutral",to_string(pHVCResult->fdResult.fcResult[i].expressionResult.score[0]));
@@ -759,36 +724,33 @@ int main(int argc, char *argv[])
                     p_listJSON->push("gaze_lr",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeLR));
                     p_listJSON->push("gaze_ud",to_string(pHVCResult->fdResult.fcResult[i].gazeResult.gazeUD));
 
-                    p_listJSON->push("stabilization","0");
+                    if (pHVCResult->fdResult.fcResult[i].ageResult.confidence >= 20500 && pHVCResult->fdResult.fcResult[i].genderResult.confidence >= 20500)
+                        p_listJSON->push("stabilization","1");
+                    else
+                        p_listJSON->push("stabilization","");
                     
                     string tmp = p_listJSON->pop();
                     if (!(tmp.empty()))
                     {
                         p_postCurl->send_post(tmp.c_str());
-                        //printf("送信完了 ログに書き込み\n");
-                        
-                        //--------------------
-                        //ここからログ書き込み
                         time( &timer );
                         t_st = localtime(&timer);
-                        
                         outputfile<< t_st->tm_year+1900 << "/" << t_st->tm_mon+1 << "/" << t_st->tm_mday << "_" << t_st->tm_hour << ":" << t_st->tm_min <<":" << t_st->tm_sec << "|" << tmp <<endl;
-                        
-                        }
                     }
                 }
-            //}
+            }
 
             //一定時間立ったらlogファイルをcloseしてopenする
-            elapsedTimeSecond = difftime(time(NULL) ， timeElapsed);
+            elapsedTimeSecond = difftime(time(NULL) , timeElapsed);
                 
             //10分経過
-            if( elapsedTimeSecond >= 120 )
+            if( elapsedTimeSecond >= 10 )
             {
                 cout << "自動書き込み完了" << endl;
                 outputfile.close();
                 outputfile.open("/home/pi/TinyRetail-hvcp2/log/log.txt" ,ios::app);
                 timeElapsed = time(NULL);
+                elapsedTimeSecond = 0;
             }
 
             if (kbhit())
@@ -796,9 +758,9 @@ int main(int argc, char *argv[])
                 printf("キーボードが押されたので終了します。\n", getchar());
                 break;
             }
-            
-            //usleep(100000);
+            usleep(10); 
         } while( ch != ' ' );
+        
     } while(0);
     
     outputfile.close();

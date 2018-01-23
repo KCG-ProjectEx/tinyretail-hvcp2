@@ -14,6 +14,7 @@
 /* limitations under the License.                                            */
 /*---------------------------------------------------------------------------*/
 
+//g++ -o TinyRetail_HVCP2 TinyRetail_HVCP2_main.cpp HVCApi.c STBWrap.c uart.c Post_curl.cpp JSON.cpp libHVCP2.a -lcurl -std=c++11 -I/usr/local/include/opencv2 -I/usr/local/include/opencv -L/usr/local/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui -fsigned-char
 #ifndef main_H__
 #define main_H__
 
